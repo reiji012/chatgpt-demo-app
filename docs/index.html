@@ -152,6 +152,15 @@
                 return;
             }
 
+            // 自分のメッセージを表示
+            const newMessage = document.createElement("div");
+                newMessage.classList.add("message", "sender");
+                newMessage.textContent = prompt;
+                chatContainer.appendChild(newMessage);
+
+                // 入力欄を空にする
+                inputField.value = "";
+
             const endpoint = "https://api.openai.com/v1/chat/completions";
             const headers = new Headers({
                 "Content-Type": "application/json",
@@ -204,14 +213,6 @@
 
 
             if (messageText) {
-                // 自分のメッセージを表示
-                const newMessage = document.createElement("div");
-                newMessage.classList.add("message", "sender");
-                newMessage.textContent = messageText;
-                chatContainer.appendChild(newMessage);
-
-                // 入力欄を空にする
-                inputField.value = "";
 
                 // APIから返答を取得して表示
                 const reply = await getChatGPTResponse(messageText);
