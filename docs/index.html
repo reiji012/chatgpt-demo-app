@@ -141,9 +141,7 @@
 
 
             console.log(prompt);
-            messages.push({ role: "user", content: prompt });
-
-            console.log(messages);
+            
 
 
             const apiKey = apiKeyInput.value;
@@ -151,6 +149,10 @@
                 alert("APIキーが入力されていません。");
                 return;
             }
+
+            messages.push({ role: "user", content: prompt });
+
+            console.log(messages);
 
             // 自分のメッセージを表示
             const newMessage = document.createElement("div");
@@ -216,6 +218,10 @@
 
                 // APIから返答を取得して表示
                 const reply = await getChatGPTResponse(messageText);
+
+                if (reply == '') {
+                    return;
+                }
                 const replyMessage = document.createElement("div");
                 replyMessage.classList.add("message", "receiver");
                 replyMessage.textContent = reply;
@@ -250,12 +256,7 @@
             indicator.style.zIndex = "1000";
 
             const spinner = document.createElement("div");
-            spinner.style.width = "50px";
-            spinner.style.height = "50px";
-            spinner.style.border = "5px solid rgba(255, 255, 255, 0.5)";
-            spinner.style.borderTopColor = "white";
-            spinner.style.borderRadius = "50%";
-            spinner.style.animation = "spin 1s linear infinite";
+            spinner.classList.add("spinner");
 
             indicator.appendChild(spinner);
             document.body.appendChild(indicator);
