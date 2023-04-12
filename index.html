@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チャット画面</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .chat-app {
+            max-width: 500px;
+            width: 100%;
+            height: 80%;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-container {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .send-button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+
+        .message.sender {
+            align-self: flex-start;
+            background-color: #e9e9e9;
+        }
+
+        .message.receiver {
+            align-self: flex-end;
+            background-color: #007bff;
+            color: white;
+        }
+
+        /* ここから追加 */
+        .api-key-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #api-key-input {
+            flex-grow: 1;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="chat-app">
+        <div class="api-key-container">
+            <label for="api-key-input">API Key:</label>
+            <input type="text" id="api-key-input" placeholder="APIキーを入力">
+        </div>
+        <div class="chat-container" id="chat-container">
+            <div class="message sender">こんにちは！</div>
+            <div class="message receiver">こんにちは！</div>
+            <!-- 以下にメッセージを追加 -->
+        </div>
+        <div class="input-container">
+            <input class="input-field" id="input-field" type="text" placeholder="メッセージを入力">
+            <button class="send-button" id="send-button">送信</button>
+        </div>
+    </div>
+    <script>
+        const inputField = document.getElementById("input-field");
+        const sendButton = document.getElementById("send-button");
+        const chatContainer = document.getElementById("chat-container");
+        const apiKeyInput = document.getElementById("api-key-input");
+
+        const messages = [
+            {
+                "role": "system",
+                "content": "あなたは最高の料理人です。・ユーザーに適切な料理を振る舞うために、必要となる質問を投げかけてください・複数の質問の後、適切な料理を提案してください。・1回の質問内容は１つだけです。・また質問する際は、謝罪などの前置きは不要で、質問だけしてください。・料理を提案する際は、多くて2種類に絞られる場合に提案してください。・質問は少なくとも3回以上すること。Userは「あなた」と呼んでください。"
+            },
+            {
+                "role": "assistant",
+                "content": "私はあなたの体調・気分に合わせて料理を提供するためのアシスタントです。まずはあなたの現在の体調をお聞かせできますか？"
+            }
+        ];
+
+
+        // ここに以前のJavaScriptを挿入
+
+        async function getChatGPTResponse(prompt) {
+            inputField.value = "";
+
+            var prompt = createPronmt(prompt);
+
+
+            console.log(prompt);
+            messages.push({ role: "user", content: prompt });
+
+            console.log(messages);
+
+
+            const apiKey = apiKeyInput.value;
+            if (!apiKey) {
+                alert("APIキーが入力されていません。");
+                return;
+            }
+
+            const endpoint = "https://api.openai.com/v1/chat/completions";
+            const headers = new Headers({
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            });
+
+            const requestBody = JSON.stringify({
+                "model": "gpt-3.5-turbo",
+                "messages": messages,
+                "temperature": 0.7,
+                // "max_tokens": 50,
+            });
+            // インジケーターを表示し、操作を制限する
+            const indicator = createIndicator();
+            inputField.disabled = true;
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: headers,
+                    body: requestBody
+                });
+
+                console.log('通信終了');
+                console.log(response);
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log(data);
+                    const reply = data.choices[0].message.content;
+                    messages.push({ role: "assistant", content: reply });
+                    return reply;
+                } else {
+                    throw new Error("API request failed");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                return "エラーが発生しました。";
+            } finally {
+                // インジケーターを非表示にし、操作制限を解除する
+                document.body.removeChild(indicator);
+                inputField.disabled = false;
+                sendButton.disabled = false;
+            }
+        }
+
+        sendButton.addEventListener("click", async () => {
+            const messageText = inputField.value.trim();
+
+
+            if (messageText) {
+                // 自分のメッセージを表示
+                const newMessage = document.createElement("div");
+                newMessage.classList.add("message", "sender");
+                newMessage.textContent = messageText;
+                chatContainer.appendChild(newMessage);
+
+                // 入力欄を空にする
+                inputField.value = "";
+
+                // APIから返答を取得して表示
+                const reply = await getChatGPTResponse(messageText);
+                const replyMessage = document.createElement("div");
+                replyMessage.classList.add("message", "receiver");
+                replyMessage.textContent = reply;
+                chatContainer.appendChild(replyMessage);
+
+                // 自動スクロール
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        });
+
+        // Enterキーでも送信できるようにする
+        inputField.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                event.preventDefault();
+                sendButton.click();
+            }
+        });
+
+        function createIndicator() {
+            const indicator = document.createElement("div");
+            indicator.id = "loading-indicator";
+            indicator.style.display = "flex";
+            indicator.style.justifyContent = "center";
+            indicator.style.alignItems = "center";
+            indicator.style.position = "fixed";
+            indicator.style.top = "0";
+            indicator.style.left = "0";
+            indicator.style.width = "100%";
+            indicator.style.height = "100%";
+            indicator.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+            indicator.style.zIndex = "1000";
+
+            const spinner = document.createElement("div");
+            spinner.style.width = "50px";
+            spinner.style.height = "50px";
+            spinner.style.border = "5px solid rgba(255, 255, 255, 0.5)";
+            spinner.style.borderTopColor = "white";
+            spinner.style.borderRadius = "50%";
+            spinner.style.animation = "spin 1s linear infinite";
+
+            indicator.appendChild(spinner);
+            document.body.appendChild(indicator);
+
+            return indicator;
+        }
+
+        function createPronmt(prompt) {
+            return prompt;
+        }
+    </script>
+</body>
+
+</html>
