@@ -157,12 +157,7 @@
         async function getChatGPTResponse(prompt) {
             inputField.value = "";
 
-            var prompt = createPronmt(prompt);
-
-
-            console.log(prompt);
-            
-
+            var prompt = createPronmt(prompt);            
 
             const apiKey = apiKeyInput.value;
             if (!apiKey) {
@@ -172,6 +167,7 @@
 
             messages.push({ role: "user", content: prompt });
 
+            console.log("messages: ");
             console.log(messages);
 
             // 自分のメッセージを表示
@@ -201,6 +197,8 @@
             sendButton.disabled = true;
 
             try {
+                console.log('通信開始');
+
                 const response = await fetch(endpoint, {
                     method: "POST",
                     headers: headers,
@@ -208,10 +206,10 @@
                 });
 
                 console.log('通信終了');
-                console.log(response);
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log("response: ")
                     console.log(data);
                     const reply = data.choices[0].message.content;
                     messages.push({ role: "assistant", content: reply });
